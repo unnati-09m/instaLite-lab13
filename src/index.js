@@ -60,6 +60,36 @@ app.get("/users", async (req, res) => {
   }
 });
 
+// Step 6: GET /users/:id
+app.get("/users/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(404).json({
+        error: "User not found",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found",
+      });
+    }
+
+    return res.status(200).json(user);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: "Internal server error",
+    });
+  }
+});
+
 app.get('/health', (req, res) => {
    res.status(200).json({ status: "OK" });
 });
