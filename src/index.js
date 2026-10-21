@@ -94,7 +94,43 @@ app.get('/health', (req, res) => {
    res.status(200).json({ status: "OK" });
 });
 
+// Step 7: PATCH /users/:id
+app.patch("/users/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const { fullname, bio, isPrivate } = req.body;
 
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(404).json({
+      error: "User not found",
+    });
+  }
+
+  const data = {};
+
+  if (fullname !== undefined) data.fullname = fullname;
+  if (bio !== undefined) data.bio = bio;
+  if (isPrivate !== undefined) data.isPrivate = isPrivate;
+
+  try {
+    const user = await prisma.user.update({
+      where: { id },
+      data,
+    });
+
+    return res.status(200).json(user);
+  } catch (error) {
+    if (error.code === "P2025") {
+      return res.status(404).json({
+        error: "User not found",
+      });
+    }
+
+    console.error(error);
+    return res.status(500).json({
+      error: "Internal server error",
+    });
+  }
+});
 
 app.listen(port, () => {
   console.log("Server started on port 3000");
