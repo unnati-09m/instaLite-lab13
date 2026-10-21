@@ -3,15 +3,7 @@ const app = express();
 const port = 3000;
 app.use(express.json());
 
-import "dotenv/config";
-import { PrismaClient } from "./generated/prisma/client.ts";
-import { PrismaPg } from "@prisma/adapter-pg";
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-
-export const prisma = new PrismaClient({ adapter });
+import prisma from "./db.js";
 
 // Step 4: POST /users
 
