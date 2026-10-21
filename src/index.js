@@ -14,6 +14,7 @@ const adapter = new PrismaPg({
 export const prisma = new PrismaClient({ adapter });
 
 // Step 4: POST /users
+
 app.post("/users", async (req, res) => {
   const { username, email, fullname, bio } = req.body;
 
@@ -46,6 +47,18 @@ app.post("/users", async (req, res) => {
   }
 });
 
+// Step 5: GET /users
+
+app.get("/users", async (req, res) => {
+  try {
+    const users = await prisma.user.findMany();
+
+    return res.status(200).json(users);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 app.get('/health', (req, res) => {
    res.status(200).json({ status: "OK" });
