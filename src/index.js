@@ -161,6 +161,9 @@ app.delete("/users/:id", async (req, res) => {
   }
 });
 
+// [POST /users , GET /users , GET /users/:id,
+// PATCH /users/:id ,DELETE /users/:id] -- complete CRUD endpoints
+
 app.listen(port, () => {
   console.log("Server started on port 3000");
 });
