@@ -62,10 +62,10 @@ export async function list(req, res) {
     });
   }
 
-  const allowedSortFields = ["createdAt", "updatedAt"];
+  const allowedSortFields = ["createdAt", "updatedAt", "likes"];
   if (!allowedSortFields.includes(sortBy)) {
     return res.status(400).json({
-      error: "sortBy must be one of: createdAt, updatedAt",
+      error: "sortBy must be one of: createdAt, updatedAt, likes",
     });
   }
 
