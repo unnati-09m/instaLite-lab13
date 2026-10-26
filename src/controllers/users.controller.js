@@ -7,6 +7,7 @@ import {
   updateUser,
   deleteUser,
   listPostsByUser,
+  listLikedPostsByUser,
 } from "../services/users.service.js";
 
 export async function create(req, res) {
@@ -106,6 +107,42 @@ export async function list(req, res) {
   }
 }
 
+
+export async function listLikedPosts(req, res) {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  try {
+    const user = await getUserById(id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const pagination = parsePagination(req.query);
+    if (pagination.error) {
+      return res.status(400).json({ error: pagination.error });
+    }
+
+    const { page, limit, skip } = pagination;
+    const [posts, total] = await listLikedPostsByUser(id, skip, limit);
+
+    return res.status(200).json({
+      data: posts,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
 
 export async function listUserPosts(req, res) {
   const id = Number(req.params.id);

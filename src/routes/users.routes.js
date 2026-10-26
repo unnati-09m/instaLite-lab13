@@ -7,12 +7,14 @@ import {
   update,
   remove,
   listUserPosts,
+  listLikedPosts,
 } from "../controllers/users.controller.js";
 
 const router = express.Router();
 
 router.post("/", create);
 router.get("/", list);
+router.get("/:id/liked-posts", listLikedPosts);
 router.get("/:id/posts", listUserPosts);
 router.get("/:id", getOne);
 router.patch("/:id", update);

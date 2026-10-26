@@ -69,3 +69,33 @@ export async function listPostsByUser(userId, skip, take) {
     prisma.post.count({ where }),
   ]);
 }
+
+export async function listLikedPostsByUser(userId, skip, take) {
+  const where = {
+    likes: {
+      some: { userId },
+    },
+  };
+
+  return prisma.$transaction([
+    prisma.post.findMany({
+      where,
+      skip,
+      take,
+      orderBy: { createdAt: "desc" },
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+            fullname: true,
+          },
+        },
+        _count: {
+          select: { likes: true },
+        },
+      },
+    }),
+    prisma.post.count({ where }),
+  ]);
+}
