@@ -1,3 +1,4 @@
+import { parsePagination } from "../utils/pagination.js";
 
 import {
   createUser,
@@ -5,6 +6,7 @@ import {
   getUserById,
   updateUser,
   deleteUser,
+  listPostsByUser,
 } from "../services/users.service.js";
 
 export async function create(req, res) {
@@ -40,23 +42,15 @@ export async function create(req, res) {
 }
 
 export async function list(req, res) {
-  const page = req.query.page === undefined ? 1 : Number(req.query.page);
-  const requestedLimit =
-    req.query.limit === undefined ? 10 : Number(req.query.limit);
+  const pagination = parsePagination(req.query);
+  if (pagination.error) {
+    return res.status(400).json({ error: pagination.error });
+  }
+
+  const { page, limit, skip } = pagination;
   const sortBy = req.query.sortBy ?? "createdAt";
   const order = req.query.order ?? "desc";
   const { isPrivate, search, hasPosts } = req.query;
-
-  if (
-    !Number.isInteger(page) ||
-    !Number.isInteger(requestedLimit) ||
-    page < 1 ||
-    requestedLimit < 1
-  ) {
-    return res.status(400).json({
-      error: "page and limit must be positive integers",
-    });
-  }
 
   const allowedSortFields = ["createdAt", "username", "fullname"];
   if (!allowedSortFields.includes(sortBy)) {
@@ -98,27 +92,54 @@ export async function list(req, res) {
     where.posts = hasPosts === "true" ? { some: {} } : { none: {} };
   }
 
-  const limit = Math.min(requestedLimit, 50);
-  const skip = (page - 1) * limit;
-
   try {
     const [users, total] = await listUsers(skip, limit, sortBy, order, where);
     const totalPages = Math.ceil(total / limit);
 
     return res.status(200).json({
       data: users,
+      meta: { page, limit, total, totalPages },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+
+export async function listUserPosts(req, res) {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  try {
+    const user = await getUserById(id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const pagination = parsePagination(req.query);
+    if (pagination.error) {
+      return res.status(400).json({ error: pagination.error });
+    }
+
+    const { page, limit, skip } = pagination;
+    const [posts, total] = await listPostsByUser(id, skip, limit);
+
+    return res.status(200).json({
+      data: posts,
       meta: {
         page,
         limit,
         total,
-        totalPages,
+        totalPages: Math.ceil(total / limit),
       },
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({
-      error: "Internal server error",
-    });
+    return res.status(500).json({ error: "Internal server error" });
   }
 }
 

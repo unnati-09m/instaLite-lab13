@@ -50,3 +50,22 @@ export async function deleteUser(id) {
     where: { id },
   });
 }
+
+export async function listPostsByUser(userId, skip, take) {
+  const where = { authorId: userId };
+
+  return prisma.$transaction([
+    prisma.post.findMany({
+      where,
+      skip,
+      take,
+      orderBy: { createdAt: "desc" },
+      include: {
+        _count: {
+          select: { likes: true },
+        },
+      },
+    }),
+    prisma.post.count({ where }),
+  ]);
+}

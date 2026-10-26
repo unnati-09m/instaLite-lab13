@@ -1,3 +1,4 @@
+import { parsePagination } from "../utils/pagination.js";
 
 import {
   createPost,
@@ -44,23 +45,15 @@ export async function create(req, res) {
 }
 
 export async function list(req, res) {
-  const page = req.query.page === undefined ? 1 : Number(req.query.page);
-  const requestedLimit =
-    req.query.limit === undefined ? 10 : Number(req.query.limit);
+  const pagination = parsePagination(req.query);
+  if (pagination.error) {
+    return res.status(400).json({ error: pagination.error });
+  }
+
+  const { page, limit, skip } = pagination;
   const sortBy = req.query.sortBy ?? "createdAt";
   const order = req.query.order ?? "desc";
   const { location, search, from, to } = req.query;
-
-  if (
-    !Number.isInteger(page) ||
-    !Number.isInteger(requestedLimit) ||
-    page < 1 ||
-    requestedLimit < 1
-  ) {
-    return res.status(400).json({
-      error: "page and limit must be positive integers",
-    });
-  }
 
   const allowedSortFields = ["createdAt", "updatedAt", "likes"];
   if (!allowedSortFields.includes(sortBy)) {
@@ -76,10 +69,9 @@ export async function list(req, res) {
   }
 
   const isValidDate = (value) => {
-    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    if (typeof value !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {
       return false;
     }
-
     const parsedDate = new Date(`${value}T00:00:00.000Z`);
     return (
       !Number.isNaN(parsedDate.getTime()) &&
@@ -97,55 +89,30 @@ export async function list(req, res) {
   }
 
   const where = {};
-
   if (typeof location === "string" && location.length > 0) {
-    where.location = {
-      equals: location,
-      mode: "insensitive",
-    };
+    where.location = { equals: location, mode: "insensitive" };
   }
-
   if (typeof search === "string" && search.length > 0) {
-    where.caption = {
-      contains: search,
-      mode: "insensitive",
-    };
+    where.caption = { contains: search, mode: "insensitive" };
   }
-
   if (from !== undefined || to !== undefined) {
     where.createdAt = {};
-    if (from !== undefined) {
-      where.createdAt.gte = new Date(`${from}T00:00:00.000Z`);
-    }
-    if (to !== undefined) {
-      // 'to' is exclusive, so a monthly date range has no overlap.
-      where.createdAt.lt = new Date(`${to}T00:00:00.000Z`);
-    }
+    if (from !== undefined) where.createdAt.gte = new Date(`${from}T00:00:00.000Z`);
+    if (to !== undefined) where.createdAt.lt = new Date(`${to}T00:00:00.000Z`);
   }
-
-  const limit = Math.min(requestedLimit, 50);
-  const skip = (page - 1) * limit;
 
   try {
     const [posts, total] = await listPosts(skip, limit, sortBy, order, where);
-    const totalPages = Math.ceil(total / limit);
-
     return res.status(200).json({
       data: posts,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({
-      error: "Internal server error",
-    });
+    return res.status(500).json({ error: "Internal server error" });
   }
 }
+
 
 export async function getOne(req, res) {
   const id = Number(req.params.id);
