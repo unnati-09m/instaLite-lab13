@@ -40,8 +40,25 @@ export async function create(req, res) {
 }
 
 export async function list(req, res) {
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+
+  if (
+    !Number.isInteger(page) ||
+    !Number.isInteger(limit) ||
+    page < 1 ||
+    limit < 1 ||
+    limit > 100
+  ) {
+    return res.status(400).json({
+      error: "Invalid page or limit",
+    });
+  }
+
+  const skip = (page - 1) * limit;
+
   try {
-    const users = await listUsers();
+    const users = await listUsers(skip, limit);
     return res.status(200).json(users);
   } catch (error) {
     console.error(error);
