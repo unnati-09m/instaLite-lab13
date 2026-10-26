@@ -2,6 +2,7 @@
 import {
   createUser,
   listUsers,
+  countUsers,
   getUserById,
   updateUser,
   deleteUser,
@@ -59,7 +60,18 @@ export async function list(req, res) {
 
   try {
     const users = await listUsers(skip, limit);
-    return res.status(200).json(users);
+    const total = await countUsers();
+    const totalPages = Math.ceil(total / limit);
+
+    return res.status(200).json({
+      data: users,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages,
+      },
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({
