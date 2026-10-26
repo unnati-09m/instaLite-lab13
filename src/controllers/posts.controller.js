@@ -6,6 +6,7 @@ import {
   getPostById,
   updatePost,
   deletePost,
+  getPostLikers,
 } from "../services/posts.service.js";
 
 export async function create(req, res) {
@@ -113,6 +114,26 @@ export async function list(req, res) {
   }
 }
 
+
+export async function listLikes(req, res) {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(404).json({ error: "Post not found" });
+  }
+
+  try {
+    const post = await getPostLikers(id);
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    return res.status(200).json(post.likes.map((like) => like.user));
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
 
 export async function getOne(req, res) {
   const id = Number(req.params.id);

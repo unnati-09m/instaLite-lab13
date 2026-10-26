@@ -70,3 +70,26 @@ export async function deletePost(id) {
     where: { id },
   });
 }
+
+export async function getPostLikers(postId) {
+  return prisma.post.findUnique({
+    where: { id: postId },
+    select: {
+      id: true,
+      likes: {
+        orderBy: {
+          user: { username: "asc" },
+        },
+        select: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              fullname: true,
+            },
+          },
+        },
+      },
+    },
+  });
+}
