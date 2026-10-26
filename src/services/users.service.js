@@ -5,10 +5,15 @@ export async function createUser(data) {
   return prisma.user.create({ data });
 }
 
-export async function listUsers() {
-  return prisma.user.findMany();
+export async function listUsers(skip, take) {
+  return prisma.user.findMany({
+    skip,
+    take,
+    orderBy: {
+      id: "asc",
+    },
+  });
 }
-
 export async function getUserById(id) {
   return prisma.user.findUnique({
     where: { id },
