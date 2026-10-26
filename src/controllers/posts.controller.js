@@ -8,23 +8,34 @@ import {
 } from "../services/posts.service.js";
 
 export async function create(req, res) {
-  const { imageUrl, caption, location } = req.body;
+  const { imageUrl, authorId, caption, location } = req.body;
 
-  if (!imageUrl) {
+  if (!imageUrl || authorId === undefined || authorId === null) {
     return res.status(400).json({
-      error: "imageUrl is required",
+      error: "imageUrl and authorId are required",
     });
+  }
+
+  const parsedAuthorId = Number(authorId);
+  if (!Number.isInteger(parsedAuthorId) || parsedAuthorId <= 0) {
+    return res.status(404).json({ error: "User not found" });
   }
 
   try {
     const post = await createPost({
       imageUrl,
+      authorId: parsedAuthorId,
       caption,
       location,
     });
 
     return res.status(201).json(post);
   } catch (error) {
+    // The foreign-key constraint reports an authorId that is not in User.
+    if (error.code === "P2003") {
+      return res.status(404).json({ error: "User not found" });
+    }
+
     console.error(error);
     return res.status(500).json({
       error: "Internal server error",
