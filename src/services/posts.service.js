@@ -5,8 +5,24 @@ export async function createPost(data) {
   return prisma.post.create({ data });
 }
 
-export async function listPosts() {
-  return prisma.post.findMany();
+export async function listPosts(
+  skip,
+  take,
+  sortBy = "createdAt",
+  order = "desc",
+  where = {},
+) {
+  return prisma.$transaction([
+    prisma.post.findMany({
+      where,
+      skip,
+      take,
+      orderBy: {
+        [sortBy]: order,
+      },
+    }),
+    prisma.post.count({ where }),
+  ]);
 }
 
 export async function getPostById(id) {

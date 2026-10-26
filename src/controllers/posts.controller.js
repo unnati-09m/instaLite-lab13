@@ -33,9 +33,52 @@ export async function create(req, res) {
 }
 
 export async function list(req, res) {
+  const page = req.query.page === undefined ? 1 : Number(req.query.page);
+  const requestedLimit =
+    req.query.limit === undefined ? 10 : Number(req.query.limit);
+  const sortBy = req.query.sortBy ?? "createdAt";
+  const order = req.query.order ?? "desc";
+
+  if (
+    !Number.isInteger(page) ||
+    !Number.isInteger(requestedLimit) ||
+    page < 1 ||
+    requestedLimit < 1
+  ) {
+    return res.status(400).json({
+      error: "page and limit must be positive integers",
+    });
+  }
+
+  const allowedSortFields = ["createdAt", "updatedAt"];
+  if (!allowedSortFields.includes(sortBy)) {
+    return res.status(400).json({
+      error: "sortBy must be one of: createdAt, updatedAt",
+    });
+  }
+
+  if (!["asc", "desc"].includes(order)) {
+    return res.status(400).json({
+      error: "order must be asc or desc",
+    });
+  }
+
+  const limit = Math.min(requestedLimit, 50);
+  const skip = (page - 1) * limit;
+
   try {
-    const posts = await listPosts();
-    return res.status(200).json(posts);
+    const [posts, total] = await listPosts(skip, limit, sortBy, order);
+    const totalPages = Math.ceil(total / limit);
+
+    return res.status(200).json({
+      data: posts,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({
