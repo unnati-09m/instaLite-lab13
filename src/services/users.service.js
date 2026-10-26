@@ -14,6 +14,10 @@ export async function listUsers(skip, take) {
     },
   });
 }
+
+export async function countUsers() {
+  return prisma.user.count();
+}
 export async function getUserById(id) {
   return prisma.user.findUnique({
     where: { id },
