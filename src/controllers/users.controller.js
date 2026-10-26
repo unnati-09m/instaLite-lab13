@@ -45,6 +45,7 @@ export async function list(req, res) {
     req.query.limit === undefined ? 10 : Number(req.query.limit);
   const sortBy = req.query.sortBy ?? "createdAt";
   const order = req.query.order ?? "desc";
+  const { isPrivate, search } = req.query;
 
   if (
     !Number.isInteger(page) ||
@@ -70,11 +71,28 @@ export async function list(req, res) {
     });
   }
 
+  const where = {};
+  if (isPrivate !== undefined) {
+    if (isPrivate !== "true" && isPrivate !== "false") {
+      return res.status(400).json({
+        error: "isPrivate must be true or false",
+      });
+    }
+    where.isPrivate = isPrivate === "true";
+  }
+
+  if (typeof search === "string" && search.length > 0) {
+    where.OR = [
+      { username: { contains: search, mode: "insensitive" } },
+      { fullname: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
   const limit = Math.min(requestedLimit, 50);
   const skip = (page - 1) * limit;
 
   try {
-    const [users, total] = await listUsers(skip, limit, sortBy, order);
+    const [users, total] = await listUsers(skip, limit, sortBy, order, where);
     const totalPages = Math.ceil(total / limit);
 
     return res.status(200).json({
