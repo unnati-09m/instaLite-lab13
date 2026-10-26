@@ -2,7 +2,6 @@
 import {
   createUser,
   listUsers,
-  countUsers,
   getUserById,
   updateUser,
   deleteUser,
@@ -41,26 +40,26 @@ export async function create(req, res) {
 }
 
 export async function list(req, res) {
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
+  const page = req.query.page === undefined ? 1 : Number(req.query.page);
+  const requestedLimit =
+    req.query.limit === undefined ? 10 : Number(req.query.limit);
 
   if (
     !Number.isInteger(page) ||
-    !Number.isInteger(limit) ||
+    !Number.isInteger(requestedLimit) ||
     page < 1 ||
-    limit < 1 ||
-    limit > 100
+    requestedLimit < 1
   ) {
     return res.status(400).json({
-      error: "Invalid page or limit",
+      error: "page and limit must be positive integers",
     });
   }
 
+  const limit = Math.min(requestedLimit, 50);
   const skip = (page - 1) * limit;
 
   try {
-    const users = await listUsers(skip, limit);
-    const total = await countUsers();
+    const [users, total] = await listUsers(skip, limit);
     const totalPages = Math.ceil(total / limit);
 
     return res.status(200).json({

@@ -6,17 +6,16 @@ export async function createUser(data) {
 }
 
 export async function listUsers(skip, take) {
-  return prisma.user.findMany({
-    skip,
-    take,
-    orderBy: {
-      id: "asc",
-    },
-  });
-}
-
-export async function countUsers() {
-  return prisma.user.count();
+  return prisma.$transaction([
+    prisma.user.findMany({
+      skip,
+      take,
+      orderBy: {
+        createdAt: "desc",
+      },
+    }),
+    prisma.user.count(),
+  ]);
 }
 export async function getUserById(id) {
   return prisma.user.findUnique({
