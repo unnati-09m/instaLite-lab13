@@ -5,16 +5,23 @@ export async function createUser(data) {
   return prisma.user.create({ data });
 }
 
-export async function listUsers(skip, take) {
+export async function listUsers(
+  skip,
+  take,
+  sortBy = "createdAt",
+  order = "desc",
+  where = {},
+) {
   return prisma.$transaction([
     prisma.user.findMany({
+      where,
       skip,
       take,
       orderBy: {
-        createdAt: "desc",
+        [sortBy]: order,
       },
     }),
-    prisma.user.count(),
+    prisma.user.count({ where }),
   ]);
 }
 export async function getUserById(id) {

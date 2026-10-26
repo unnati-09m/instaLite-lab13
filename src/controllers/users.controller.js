@@ -43,6 +43,8 @@ export async function list(req, res) {
   const page = req.query.page === undefined ? 1 : Number(req.query.page);
   const requestedLimit =
     req.query.limit === undefined ? 10 : Number(req.query.limit);
+  const sortBy = req.query.sortBy ?? "createdAt";
+  const order = req.query.order ?? "desc";
 
   if (
     !Number.isInteger(page) ||
@@ -55,19 +57,32 @@ export async function list(req, res) {
     });
   }
 
+  const allowedSortFields = ["createdAt", "username", "fullname"];
+  if (!allowedSortFields.includes(sortBy)) {
+    return res.status(400).json({
+      error: "sortBy must be one of: createdAt, username, fullname",
+    });
+  }
+
+  if (!["asc", "desc"].includes(order)) {
+    return res.status(400).json({
+      error: "order must be asc or desc",
+    });
+  }
+
   const limit = Math.min(requestedLimit, 50);
   const skip = (page - 1) * limit;
 
   try {
-    const [users, total] = await listUsers(skip, limit);
+    const [users, total] = await listUsers(skip, limit, sortBy, order);
     const totalPages = Math.ceil(total / limit);
 
     return res.status(200).json({
       data: users,
       meta: {
-        total,
         page,
         limit,
+        total,
         totalPages,
       },
     });
