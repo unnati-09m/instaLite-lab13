@@ -38,6 +38,7 @@ export async function list(req, res) {
     req.query.limit === undefined ? 10 : Number(req.query.limit);
   const sortBy = req.query.sortBy ?? "createdAt";
   const order = req.query.order ?? "desc";
+  const { location, search, from, to } = req.query;
 
   if (
     !Number.isInteger(page) ||
@@ -63,11 +64,59 @@ export async function list(req, res) {
     });
   }
 
+  const isValidDate = (value) => {
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return false;
+    }
+
+    const parsedDate = new Date(`${value}T00:00:00.000Z`);
+    return (
+      !Number.isNaN(parsedDate.getTime()) &&
+      parsedDate.toISOString().slice(0, 10) === value
+    );
+  };
+
+  if (
+    (from !== undefined && !isValidDate(from)) ||
+    (to !== undefined && !isValidDate(to))
+  ) {
+    return res.status(400).json({
+      error: "from and to must be valid dates",
+    });
+  }
+
+  const where = {};
+
+  if (typeof location === "string" && location.length > 0) {
+    where.location = {
+      equals: location,
+      mode: "insensitive",
+    };
+  }
+
+  if (typeof search === "string" && search.length > 0) {
+    where.caption = {
+      contains: search,
+      mode: "insensitive",
+    };
+  }
+
+  if (from !== undefined || to !== undefined) {
+    where.createdAt = {};
+    if (from !== undefined) {
+      where.createdAt.gte = new Date(`${from}T00:00:00.000Z`);
+    }
+    if (to !== undefined) {
+      // 'to' is exclusive, so a monthly date range has no overlap.
+      where.createdAt.lt = new Date(`${to}T00:00:00.000Z`);
+    }
+  }
+
   const limit = Math.min(requestedLimit, 50);
   const skip = (page - 1) * limit;
 
   try {
-    const [posts, total] = await listPosts(skip, limit, sortBy, order);
+    const [posts, total] = await listPosts(skip, limit, sortBy, order, where);
     const totalPages = Math.ceil(total / limit);
 
     return res.status(200).json({
