@@ -45,7 +45,7 @@ export async function list(req, res) {
     req.query.limit === undefined ? 10 : Number(req.query.limit);
   const sortBy = req.query.sortBy ?? "createdAt";
   const order = req.query.order ?? "desc";
-  const { isPrivate, search } = req.query;
+  const { isPrivate, search, hasPosts } = req.query;
 
   if (
     !Number.isInteger(page) ||
@@ -86,6 +86,16 @@ export async function list(req, res) {
       { username: { contains: search, mode: "insensitive" } },
       { fullname: { contains: search, mode: "insensitive" } },
     ];
+  }
+
+  if (hasPosts !== undefined && hasPosts !== "true" && hasPosts !== "false") {
+    return res.status(400).json({
+      error: "hasPosts must be true or false",
+    });
+  }
+
+  if (hasPosts !== undefined) {
+    where.posts = hasPosts === "true" ? { some: {} } : { none: {} };
   }
 
   const limit = Math.min(requestedLimit, 50);
