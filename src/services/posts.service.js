@@ -28,6 +28,18 @@ export async function listPosts(
 export async function getPostById(id) {
   return prisma.post.findUnique({
     where: { id },
+    include: {
+      author: {
+        select: {
+          id: true,
+          username: true,
+          fullname: true,
+        },
+      },
+      _count: {
+        select: { likes: true },
+      },
+    },
   });
 }
 
