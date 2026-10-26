@@ -23,6 +23,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   posts     Post[]
+  likes     Like[]
 }
 
 model Post {
@@ -35,6 +36,19 @@ model Post {
   updatedAt DateTime @updatedAt
 
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes     Like[]
 
   @@index([authorId])
+}
+
+model Like {
+  userId    Int
+  postId    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@index([postId])
 }
